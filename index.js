@@ -1,17 +1,19 @@
 // Require the necessary discord.js classes
-const { Client, Collection, Events, GatewayIntentBits, IntentsBitField } = require('discord.js');
+const { Client, Collection, Events} = require('discord.js');
 const { token } = require('./config.json');
+const {REST} = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
+const { Player } = require('discord-player');
+
+// handling node file reading
 const fs = require('node:fs');
 const path = require('node:path');
 
-// creates a list of intents for client
-const myItents = new IntentsBitField();
-myItents.add(IntentsBitField.Flags.GuildPresences, IntentsBitField.Flags.GuildMembers);
-
 // Create a new client instance
-const client = new Client({ intents: myItents });
+const client = new Client({ intents: ["Guilds", "GuildMessages", "MessageContent", "GuildVoiceStates"] });
 
 // creating a commands property for client
+
 client.commands = new Collection();
 
 // handling command loading
@@ -31,29 +33,24 @@ for (const file of commandFiles) {
 	}
 }
 
+const player = Player.singleton(client);
+
 // event listener for all commands
 client.on(Events.InteractionCreate, async interaction => {
-	// ensures command is only a slash command
-	if (!interaction.isChatInputCommand()) return;
-	console.log(interaction);
-	// creating command object
-	const command = interaction.client.commands.get(interaction.commandName);
+    if(!interaction.isCommand()) return;
 
-	if (!command) {
-		console.error(`No command matching ${interaction.commandName} was found.`);
-		return;
-	}
+    const command = client.commands.get(interaction.commandName);
+    if(!command) return;
 
-	try { // attempt to execute command
-		await command.execute(interaction);
-	} catch (error) {
-		console.error(error);
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-		}
-	}
+    try
+    {
+        await command.execute({client, interaction});
+    }
+    catch(error)
+    {
+        console.error(error);
+        await interaction.reply({content: "There was an error executing this command"});
+    }
 });
 
 
