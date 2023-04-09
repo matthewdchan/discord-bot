@@ -1,14 +1,15 @@
 const { SlashCommandBuilder } = require("@discordjs/builders")
-const { useMasterPlayer } = require("discord-player");
-const player = useMasterPlayer();
+//const { useMasterPlayer } = require("discord-player");
+//const player = useMasterPlayer();
 
 module.exports = {
 	data: new SlashCommandBuilder()
         .setName("resume")
         .setDescription("Resumes the current song"),
-	execute: async ({ player, interaction }) => {
+	execute: async ({ client, interaction }) => {
+        //player = useMasterPlayer();
         // Get the queue for the server
-		const queue = player.getQueue(interaction.guildId)
+		const queue = client.player.getQueue(interaction.guildId)
 
         // Check if the queue is empty
 		if (!queue)

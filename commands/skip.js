@@ -1,17 +1,17 @@
 const { SlashCommandBuilder } = require("@discordjs/builders")
 const { MessageEmbed } = require("discord.js")
-const { useMasterPlayer } = require("discord-player");
-const player = useMasterPlayer();
+//const { useMasterPlayer } = require("discord-player");
+//const player = useMasterPlayer();
 
 module.exports = {
 	data: new SlashCommandBuilder()
         .setName("skip")
         .setDescription("Skips the current song"),
 
-	execute: async ({ player, interaction }) => {
-
+	execute: async ({ client, interaction }) => {
+        //player = useMasterPlayer();
         // Get the queue for the server
-		const queue = player.getQueue(interaction.guildId)
+		const queue = client.player.getQueue(interaction.guildId)
 
         // If there is no queue, return
 		if (!queue)

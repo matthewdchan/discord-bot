@@ -1,11 +1,13 @@
 const { SlashCommandBuilder } = require("@discordjs/builders")
+//const { useMasterPlayer } = require("discord-player");
+//const player = useMasterPlayer();
 
 module.exports = {
 	data: new SlashCommandBuilder()
         .setName("exit")
         .setDescription("Kick the bot from the channel."),
 	execute: async ({ client, interaction }) => {
-
+		//player = useMasterPlayer();
         // Get the current queue
 		const queue = client.player.getQueue(interaction.guildId)
 
