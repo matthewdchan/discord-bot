@@ -1,17 +1,25 @@
 // Require the necessary discord.js classes
-const { Client, Collection, Events, GatewayIntentBits, IntentsBitField } = require('discord.js');
-const { token } = require('./config.json');
+require('dotenv').config();
+const { REST, Routes } = require('discord.js');
+const { Client, Collection, Events, GatewayIntentBits} = require('discord.js');
+//const { token } = require('./config.json');
+const { Player } = require('discord-player');
+
+
+// handling node file reading
 const fs = require('node:fs');
 const path = require('node:path');
 
-// creates a list of intents for client
-const myItents = new IntentsBitField();
-myItents.add(IntentsBitField.Flags.GuildPresences, IntentsBitField.Flags.GuildMembers);
-
 // Create a new client instance
-const client = new Client({ intents: myItents });
+const client = new Client({ intents: [
+	GatewayIntentBits.Guilds, 
+	GatewayIntentBits.GuildVoiceStates,
+	GatewayIntentBits.MessageContent,
+	GatewayIntentBits.GuildMembers,
+	 ] });
 
 // creating a commands property for client
+const commands = [];
 client.commands = new Collection();
 
 // handling command loading
@@ -26,17 +34,45 @@ for (const file of commandFiles) {
 	// Set a new item in the Collection with the key as the command name and the value as the exported module
 	if ('data' in command && 'execute' in command) {
 		client.commands.set(command.data.name, command);
+		commands.push(command.data.toJSON());
 	} else {
 		console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
 	}
 }
 
+client.player = new Player(client, {
+	ytdlOptions: { 
+		filter: 'audioonly',
+		quality: 'highestaudio',
+		highWaterMark: 1 << 25
+	}
+});
+const player = client.player;
+
+//player.events.on('playerStart', (queue, track) =>  {
+//	queue.metadata.channel.send(`Now playing ${track.title}...`); 
+//});
+
+//globally register all commands with every server
+client.on("ready", () => {
+    // Get all ids of the servers
+    const guild_ids = client.guilds.cache.map(guild => guild.id);
+
+
+    const rest = new REST({version: '9'}).setToken(process.env.TOKEN);
+    for (const guildId of guild_ids)
+    {
+        rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId), 
+            {body: commands})
+        .then(() => console.log('Successfully updated commands for guild ' + guildId))
+        .catch(console.error);
+    }
+});
+
 // event listener for all commands
 client.on(Events.InteractionCreate, async interaction => {
-	// ensures command is only a slash command
-	if (!interaction.isChatInputCommand()) return;
-	console.log(interaction);
-	// creating command object
+	//if (!interaction.isChatInputCommand()) return;
+	console.log(interaction)
 	const command = interaction.client.commands.get(interaction.commandName);
 
 	if (!command) {
@@ -44,8 +80,8 @@ client.on(Events.InteractionCreate, async interaction => {
 		return;
 	}
 
-	try { // attempt to execute command
-		await command.execute(interaction);
+	try {
+		await command.execute(client, interaction);
 	} catch (error) {
 		console.error(error);
 		if (interaction.replied || interaction.deferred) {
@@ -65,4 +101,4 @@ client.once(Events.ClientReady, c => {
 });
 
 // Log in to Discord with your client's token
-client.login(token);
+client.login(process.env.TOKEN);
